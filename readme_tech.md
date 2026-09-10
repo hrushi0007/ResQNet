@@ -88,3 +88,77 @@ flowchart TB
 ### 5. Geospatial & Data Tools
 * **Mapping**: Expected use of `GeoPandas`, `Folium` for heatmap generation.
 * **Image Processing**: `Pillow`, `OpenCV` (cv2) for drone feed pre-processing and video compilation.
+
+## My Contributions
+
+This project is based on the original ResQNet open-source implementation. I forked the project and extended it with a reproducible synthetic testing workflow for the Scout perception pipeline.
+
+### What I Added
+
+- Added a **DEMO_MODE** to the Scout service for testing the perception pipeline without requiring an external VLM API.
+- Created a clearly labelled **synthetic drone dataset** containing simulated telemetry logs and test frames for four drones.
+- Added deterministic synthetic VLM responses covering:
+  - Buildings
+  - People
+  - Fire and smoke
+  - Flooding
+  - Vehicles
+  - Debris
+  - Road accessibility
+- Validated the **4×4 search-zone partitioning pipeline**, producing 16 mission zones from drone telemetry.
+- Validated frame-level detection using drone ID, frame number, GPS coordinates, altitude, and structured scene information.
+- Added explicit labelling to ensure synthetic outputs are not confused with real drone imagery or real-world VLM analysis.
+
+### Validation
+
+The Scout pipeline was tested using four simulated drones with 50 frames of telemetry per drone.
+
+Example validation:
+
+```text
+Total zones: 16
+Zones with frames: 4
+
+Drone 1, Frame 50:
+GPS: x=15.0, y=7.5
+Altitude: 50.0
+
+Detected scene information:
+- Buildings: 3
+- People: 2
+- Vehicles: 1
+- Debris: detected
+- Fire: not detected
+- Flooding: not detected
+
+                    ┌──────────────────────┐
+                    │   Drone Telemetry    │
+                    │  + Synthetic Frames  │
+                    └──────────┬───────────┘
+                               │
+                               ▼
+                    ┌──────────────────────┐
+                    │    SCOUT AGENT       │
+                    │                      │
+                    │ Zone Partitioning    │
+                    │ VLM Perception       │
+                    │ Scene Understanding  │
+                    └──────────┬───────────┘
+                               │
+              ┌────────────────┼────────────────┐
+              ▼                ▼                ▼
+        ┌───────────┐    ┌───────────┐    ┌───────────┐
+        │  Danger   │    │   People  │    │  Rescue   │
+        │ Analysis  │    │  Density  │    │ Priority  │
+        └─────┬─────┘    └─────┬─────┘    └─────┬─────┘
+              └────────────────┼────────────────┘
+                               ▼
+                    ┌──────────────────────┐
+                    │ Mission Strategy     │
+                    │ & Route Planning     │
+                    └──────────┬───────────┘
+                               ▼
+                    ┌──────────────────────┐
+                    │ Drone Controller     │
+                    │ + Web Dashboard      │
+                    └──────────────────────┘
