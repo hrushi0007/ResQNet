@@ -17,6 +17,7 @@ load_dotenv()
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
 OPENROUTER_VLM_MODEL = os.getenv("OPENROUTER_VLM_MODEL", "google/gemma-3-4b-it:free")
+DEMO_MODE = os.getenv("DEMO_MODE", "false").lower() == "true"
 OPENROUTER_LLM_MODEL = os.getenv("OPENROUTER_LLM_MODEL", "stepfun/step-3.5-flash:free")
 OPENROUTER_BASE = "https://openrouter.ai/api/v1/chat/completions"
 DATASET_PATH = Path(os.getenv("DATASET_PATH", str(Path(__file__).parent.parent / "Dataset")))
@@ -34,17 +35,78 @@ def encode_image_b64(path: str) -> str:
 
 
 async def vlm_chat(messages: list[dict], temperature: float = 0.3) -> str:
+    if DEMO_MODE:
+        return json.dumps({
+            "buildings": {
+                "count": 3,
+                "intact": 2,
+                "damaged": 1,
+                "collapsed": 0
+            },
+            "people": {
+                "count": 2,
+                "groups": 1,
+                "description": "Synthetic demonstration scenario"
+            },
+            "fire": {
+                "detected": False,
+                "severity": "none",
+                "description": "No fire in synthetic test scene"
+            },
+            "smoke": {
+                "detected": False,
+                "severity": "none"
+            },
+            "flood": {
+                "detected": False,
+                "severity": "none",
+                "description": "No flooding in synthetic test scene"
+            },
+            "vehicles": {
+                "count": 1,
+                "types": ["emergency_vehicle"]
+            },
+            "debris": {
+                "detected": True,
+                "severity": "minor"
+            },
+            "roads": {
+                "accessible": True,
+                "blocked": False,
+                "flooded": False
+            },
+            "scene_description": "Synthetic search-and-rescue demonstration scene. DEMO_MODE is enabled, so this is not real VLM analysis."
+        })
+
     if not OPENROUTER_API_KEY:
-        raise HTTPException(status_code=500, detail="OPENROUTER_API_KEY not set")
+        raise HTTPException(
+            status_code=500,
+            detail="OPENROUTER_API_KEY not set"
+        )
+
     async with httpx.AsyncClient(timeout=120.0) as http:
         resp = await http.post(
             OPENROUTER_BASE,
-            headers={"Authorization": f"Bearer {OPENROUTER_API_KEY}", "Content-Type": "application/json"},
-            json={"model": OPENROUTER_VLM_MODEL, "messages": messages, "temperature": temperature},
+            headers={
+                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": OPENROUTER_VLM_MODEL,
+                "messages": messages,
+                "temperature": temperature
+            },
         )
+
         if resp.status_code != 200:
-            logger.error(f"VLM error {resp.status_code}: {resp.text}")
-            raise HTTPException(status_code=502, detail=f"VLM request failed: {resp.status_code}")
+            logger.error(
+                f"VLM error {resp.status_code}: {resp.text}"
+            )
+            raise HTTPException(
+                status_code=502,
+                detail=f"VLM request failed: {resp.status_code}"
+            )
+
         return resp.json()["choices"][0]["message"]["content"]
 
 

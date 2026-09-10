@@ -51,6 +51,8 @@ async def run():
         print(f"[+] VLM Description: {det['vlm_description'][:200]}...")
         print(f"[+] Detections keys: {list(det['detections'].keys())}")
 
+        return
+
         # F3: Danger rating for a zone with frames
         if nonempty:
             target_zone = nonempty[0]["zone_id"]
